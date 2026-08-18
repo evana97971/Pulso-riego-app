@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -23,35 +27,38 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.data.PulseRepository
 import com.example.data.local.AppDatabase
 import com.example.model.DrainageStatus
-import com.example.model.MonitoringState
 import com.example.ui.theme.PulsosDeRiegoTheme
 
 class MainActivity : ComponentActivity() {
-    private lateinit var database: AppDatabase
     private lateinit var repository: PulseRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Inicializar base de datos y repositorio
-        database = AppDatabase.getInstance(this)
-        repository = PulseRepository(database)
-        
-        enableEdgeToEdge()
-        setContent {
-            PulsosDeRiegoTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    PulsosRiegoApp(repository)
+        try {
+            // Inicializar base de datos y repositorio
+            val database = AppDatabase.getInstance(this)
+            repository = PulseRepository(database)
+            
+            enableEdgeToEdge()
+            setContent {
+                PulsosDeRiegoTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        PulsosRiegoApp(repository)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
@@ -64,73 +71,96 @@ fun PulsosRiegoApp(repository: PulseRepository) {
     var errorMessage by remember { mutableStateOf("") }
 
     if (state.currentUser == null) {
-        // Pantalla de Login
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Pulso de Riego",
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Usuario o Email") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            )
-
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-            }
-
-            Button(
-                onClick = {
-                    if (username.isBlank() || password.isBlank()) {
-                        errorMessage = "Por favor completa todos los campos"
-                    } else if (repository.authenticate(username, password) != null) {
+        LoginView(
+            username = username,
+            password = password,
+            errorMessage = errorMessage,
+            onUsernameChange = { username = it },
+            onPasswordChange = { password = it },
+            onLogin = {
+                if (username.isBlank() || password.isBlank()) {
+                    errorMessage = "Por favor completa todos los campos"
+                } else {
+                    val user = repository.authenticate(username, password)
+                    if (user != null) {
                         errorMessage = ""
                     } else {
                         errorMessage = "Usuario o contraseña incorrectos"
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-            ) {
-                Text("Iniciar Sesión")
+                }
             }
-        }
+        )
     } else {
-        // Pantalla Principal
-        MainAppScreen(state, repository)
+        MainView(state, repository)
     }
 }
 
 @Composable
-fun MainAppScreen(state: MonitoringState, repository: PulseRepository) {
+fun LoginView(
+    username: String,
+    password: String,
+    errorMessage: String,
+    onUsernameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLogin: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Pulso de Riego",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(bottom = 32.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = onUsernameChange,
+            label = { Text("Usuario o Email") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            singleLine = true
+        )
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text("Contraseña") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            singleLine = true
+        )
+
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Button(
+            onClick = onLogin,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp)
+        ) {
+            Text("Iniciar Sesión")
+        }
+    }
+}
+
+@Composable
+fun MainView(state: com.example.model.MonitoringState, repository: PulseRepository) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -140,16 +170,15 @@ fun MainAppScreen(state: MonitoringState, repository: PulseRepository) {
         Text(
             text = "Bienvenido, ${state.currentUser?.fullName}",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            color = MaterialTheme.colorScheme.primary
         )
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+        LazyColumn(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            state.lots.forEach { lot ->
+            items(state.lots) { lot ->
                 val lotPulses = state.pulses.filter { it.lote == lot.id }
                 val avg = if (lotPulses.isNotEmpty()) {
                     lotPulses.map { it.drenaje_pct }.average()
@@ -164,30 +193,40 @@ fun MainAppScreen(state: MonitoringState, repository: PulseRepository) {
                     else -> DrainageStatus.OPTIMO
                 }
 
-                val rec = lot.overrideRecommendation ?: when (status) {
-                    DrainageStatus.EXCESO -> "Reducir tiempo de riego en 10-15% para el siguiente turno"
-                    DrainageStatus.DEFICIT -> "Aumentar volumen SFR o frecuencia de riego"
-                    DrainageStatus.OPTIMO -> "Mantener programa y turno actual"
-                    DrainageStatus.SIN_DATOS -> "Registrar primer pulso para calibración"
+                val statusColor = when (status) {
+                    DrainageStatus.OPTIMO -> Color.Green
+                    DrainageStatus.EXCESO -> Color.Red
+                    DrainageStatus.DEFICIT -> Color(0xFFFFA500) // Orange
+                    DrainageStatus.SIN_DATOS -> Color.Gray
                 }
 
-                Surface(
+                val rec = lot.overrideRecommendation ?: when (status) {
+                    DrainageStatus.EXCESO -> "Reducir tiempo de riego en 10-15%"
+                    DrainageStatus.DEFICIT -> "Aumentar volumen SFR o frecuencia"
+                    DrainageStatus.OPTIMO -> "Mantener programa actual"
+                    DrainageStatus.SIN_DATOS -> "Registrar primer pulso"
+                }
+
+                Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                        .fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Lote: ${lot.id}",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = "Estado: ${status.label}",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = statusColor
                         )
                         Text(
-                            text = "Drenaje Promedio: ${avg?.let { String.format("%.2f%%", it) } ?: "Sin datos"}",
+                            text = "Drenaje: ${avg?.let { String.format("%.2f%%", it) } ?: "Sin datos"}",
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
@@ -195,7 +234,7 @@ fun MainAppScreen(state: MonitoringState, repository: PulseRepository) {
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
-                            text = "Recomendación: $rec",
+                            text = "Recom: $rec",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
