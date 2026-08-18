@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pulso de Riego</string>
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="username_hint">Usuario o Email</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="login_button">Iniciar Sesión</string>
+    <string name="logout_button">Cerrar Sesión</string>
+    <string name="welcome_message">Bienvenido</string>
+</resources>
