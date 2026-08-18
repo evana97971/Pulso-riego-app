@@ -35,24 +35,26 @@ import com.example.pulsoapp.data.database.AppDatabase
 import com.example.pulsoapp.ui.theme.PulsosDeRiegoTheme
 
 class MainActivity : ComponentActivity() {
-    private lateinit var repository: AppRepository
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val database = AppDatabase.getInstance(this)
-        repository = AppRepository(database)
+        try {
+            val database = AppDatabase.getInstance(this)
+            val repository = AppRepository(database)
 
-        setContent {
-            PulsosDeRiegoTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppContent(repository)
+            setContent {
+                PulsosDeRiegoTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppContent(repository)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
@@ -109,7 +111,8 @@ fun LoginScreen(
         Text(
             "Pulso de Riego",
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 40.dp)
+            modifier = Modifier.padding(bottom = 40.dp),
+            color = MaterialTheme.colorScheme.primary
         )
 
         OutlinedTextField(
@@ -118,7 +121,8 @@ fun LoginScreen(
             label = { Text("Usuario o Email") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp)
+                .padding(bottom = 12.dp),
+            singleLine = true
         )
 
         OutlinedTextField(
@@ -128,14 +132,16 @@ fun LoginScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.dp)
+                .padding(bottom = 20.dp),
+            singleLine = true
         )
 
         if (errorMessage.isNotEmpty()) {
             Text(
                 errorMessage,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
+                style = MaterialTheme.typography.bodySmall
             )
         }
 
@@ -162,7 +168,14 @@ fun DashboardScreen(
         Text(
             "Bienvenido, ${state.currentUser?.fullName}",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 20.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Text(
+            "Lotes de Riego",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
 
         LazyColumn(
@@ -196,10 +209,24 @@ fun DashboardScreen(
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Lote ${lot.id}", style = MaterialTheme.typography.titleSmall)
-                        Text("Estado: $status", color = statusColor, style = MaterialTheme.typography.bodySmall)
-                        Text("Drenaje: ${String.format("%.1f%%", avg)}", style = MaterialTheme.typography.bodySmall)
-                        Text("Pulsos: ${pulses.size}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Lote ${lot.id}",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            "Estado: $status",
+                            color = statusColor,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Drenaje: ${String.format("%.1f%%", avg)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Pulsos: ${pulses.size}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
