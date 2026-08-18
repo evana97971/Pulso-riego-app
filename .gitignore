@@ -8,3 +8,8 @@ build/
 *.log
 .DS_Store
 local.properties
+*.iml
+.classpath
+.project
+.settings/
+proguard/
